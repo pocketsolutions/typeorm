@@ -110,7 +110,10 @@ export class MaterializedPathSubjectExecutor {
             subject.metadata.materializedPathColumn!.propertyPath
         await this.queryRunner.manager
             .createQueryBuilder()
-            .update(subject.metadata.target)
+            .update(
+                subject.metadata.parentEntityMetadata.target ??
+                    subject.metadata.target,
+            )
             .set({
                 [propertyPath]: () =>
                     `REPLACE(${propertyPath}, '${oldParentPath}${entityPath}.', '${newParentPath}${entityPath}.')`,
@@ -125,15 +128,16 @@ export class MaterializedPathSubjectExecutor {
         subject: Subject,
         id: ObjectLiteral,
     ): Promise<string> {
+        const target =
+            subject.metadata.parentEntityMetadata.target ??
+            subject.metadata.target
+        const targetName = subject.metadata.parentEntityMetadata.target
+            ? subject.metadata.parentEntityMetadata.targetName
+            : subject.metadata.targetName
         return this.queryRunner.manager
             .createQueryBuilder()
-            .select(
-                subject.metadata.targetName +
-                    "." +
-                    subject.metadata.materializedPathColumn!.propertyPath,
-                "path",
-            )
-            .from(subject.metadata.target, subject.metadata.targetName)
+            .select(targetName + "." + subject.metadata.materializedPathColumn!.propertyPath, "path", )
+            .from(target, targetName)
             .whereInIds(id)
             .getRawOne()
             .then((result) => (result ? result["path"] : ""))
