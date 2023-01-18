@@ -111,8 +111,7 @@ export class MaterializedPathSubjectExecutor {
         await this.queryRunner.manager
             .createQueryBuilder()
             .update(
-                subject.metadata.parentEntityMetadata.target ??
-                    subject.metadata.target,
+                subject.metadata?.parentEntityMetadata?.target ?? subject.metadata.target,
             )
             .set({
                 [propertyPath]: () =>
@@ -128,12 +127,9 @@ export class MaterializedPathSubjectExecutor {
         subject: Subject,
         id: ObjectLiteral,
     ): Promise<string> {
-        const target =
-            subject.metadata.parentEntityMetadata.target ??
-            subject.metadata.target
-        const targetName = subject.metadata.parentEntityMetadata.target
-            ? subject.metadata.parentEntityMetadata.targetName
-            : subject.metadata.targetName
+        const target = subject.metadata?.parentEntityMetadata?.target ?? subject.metadata.target
+        const targetName = subject.metadata?.parentEntityMetadata?.targetName ?? subject.metadata.targetName
+
         return this.queryRunner.manager
             .createQueryBuilder()
             .select(targetName + "." + subject.metadata.materializedPathColumn!.propertyPath, "path", )
