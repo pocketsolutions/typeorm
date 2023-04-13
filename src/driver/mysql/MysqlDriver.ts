@@ -26,6 +26,7 @@ import { View } from "../../schema-builder/view/View"
 import { TableForeignKey } from "../../schema-builder/table/TableForeignKey"
 import { VersionUtils } from "../../util/VersionUtils"
 import { InstanceChecker } from "../../util/InstanceChecker"
+import { UpsertType } from "../types/UpsertType"
 
 /**
  * Organizes communication with MySQL DBMS.
@@ -64,6 +65,11 @@ export class MysqlDriver implements Driver {
      * Connection options.
      */
     options: MysqlConnectionOptions
+
+    /**
+     * Version of MySQL. Requires a SQL query to the DB, so it is not always set
+     */
+    version?: string
 
     /**
      * Master database used to perform all write queries.
@@ -151,7 +157,7 @@ export class MysqlDriver implements Driver {
     /**
      * Returns type of upsert supported by driver if any
      */
-    readonly supportedUpsertType = "on-duplicate-key-update"
+    supportedUpsertTypes: UpsertType[] = ["on-duplicate-key-update"]
 
     /**
      * Gets list of spatial column data types.
@@ -402,6 +408,7 @@ export class MysqlDriver implements Driver {
             version: string
         }[] = await queryRunner.query(`SELECT VERSION() AS \`version\``)
         const dbVersion = result[0].version
+        this.version = dbVersion
         await queryRunner.release()
 
         if (this.options.type === "mariadb") {
@@ -628,6 +635,9 @@ export class MysqlDriver implements Driver {
             return "" + value
         } else if (columnMetadata.type === "set") {
             return DateUtils.simpleArrayToString(value)
+        } else if (columnMetadata.type === Number) {
+            // convert to number if number
+            value = !isNaN(+value) ? parseInt(value) : value
         }
 
         return value
@@ -677,6 +687,9 @@ export class MysqlDriver implements Driver {
             value = parseInt(value)
         } else if (columnMetadata.type === "set") {
             value = DateUtils.stringToSimpleArray(value)
+        } else if (columnMetadata.type === Number) {
+            // convert to number if number
+            value = !isNaN(+value) ? parseInt(value) : value
         }
 
         if (columnMetadata.transformer)
@@ -1216,6 +1229,7 @@ export class MysqlDriver implements Driver {
             options.acquireTimeout === undefined
                 ? {}
                 : { acquireTimeout: options.acquireTimeout },
+            { connectionLimit: options.poolSize },
             options.extra || {},
         )
     }

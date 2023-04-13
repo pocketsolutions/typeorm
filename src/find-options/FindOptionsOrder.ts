@@ -11,6 +11,12 @@ export type FindOptionsOrderProperty<Property> = Property extends Promise<
     ? FindOptionsOrderProperty<NonNullable<I>>
     : Property extends Function
     ? never
+    : Property extends string
+    ? FindOptionsOrderValue
+    : Property extends number
+    ? FindOptionsOrderValue
+    : Property extends boolean
+    ? FindOptionsOrderValue
     : Property extends Buffer
     ? FindOptionsOrderValue
     : Property extends Date
@@ -18,7 +24,7 @@ export type FindOptionsOrderProperty<Property> = Property extends Promise<
     : Property extends ObjectID
     ? FindOptionsOrderValue
     : Property extends object
-    ? FindOptionsOrder<Property>
+    ? FindOptionsOrder<Property> | FindOptionsOrderValue
     : FindOptionsOrderValue
 
 /**

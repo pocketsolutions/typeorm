@@ -1,5 +1,4 @@
 import { ColumnMetadata } from "../metadata/ColumnMetadata"
-import { parseISO } from "date-fns"
 
 /**
  * Provides utilities to transform hydrated and persisted data.
@@ -26,14 +25,15 @@ export class DateUtils {
      * Converts given value into date string in a "YYYY-MM-DD" format.
      */
     static mixedDateToDateString(value: string | Date): string {
-        if (value instanceof Date)
+        if (value instanceof Date) {
             return (
-                this.formatZerolessValue(value.getFullYear()) +
+                this.formatZerolessValue(value.getFullYear(), 4) +
                 "-" +
                 this.formatZerolessValue(value.getMonth() + 1) +
                 "-" +
                 this.formatZerolessValue(value.getDate())
             )
+        }
 
         return value
     }
@@ -46,22 +46,10 @@ export class DateUtils {
         toUtc: boolean = false,
         useMilliseconds = true,
     ): Date {
-        /**
-         * new Date(ISOString) is not a reliable parser to date strings.
-         * It's better to use 'date-fns' parser to parser string in ISO Format.
-         *
-         * The problem here is with wrong timezone.
-         *
-         * For example:
-         *
-         * ``new Date('2021-04-28')`` will generate `2021-04-28T00:00:00.000Z`
-         * in my timezone, which is not true for my timezone (GMT-0300). It should
-         * be `2021-04-28T03:00:00.000Z` as `new Date(2021, 3, 28)` generates.
-         *
-         * https://stackoverflow.com/a/2587398
-         */
         let date =
-            typeof mixedDate === "string" ? parseISO(mixedDate) : mixedDate
+            typeof mixedDate === "string"
+                ? DateUtils.parseDateAsISO(mixedDate)
+                : mixedDate
 
         if (toUtc)
             date = new Date(
@@ -151,7 +139,7 @@ export class DateUtils {
         }
         if (value instanceof Date) {
             let finalValue =
-                this.formatZerolessValue(value.getFullYear()) +
+                this.formatZerolessValue(value.getFullYear(), 4) +
                 "-" +
                 this.formatZerolessValue(value.getMonth() + 1) +
                 "-" +
@@ -183,7 +171,7 @@ export class DateUtils {
         }
         if (value instanceof Date) {
             return (
-                this.formatZerolessValue(value.getUTCFullYear()) +
+                this.formatZerolessValue(value.getUTCFullYear(), 4) +
                 "-" +
                 this.formatZerolessValue(value.getUTCMonth() + 1) +
                 "-" +
@@ -258,12 +246,12 @@ export class DateUtils {
     // -------------------------------------------------------------------------
 
     /**
-     * Formats given number to "0x" format, e.g. if it is 1 then it will return "01".
+     * Formats given number to "0x" format, e.g. if the totalLength = 2 and the value is 1 then it will return "01".
      */
-    private static formatZerolessValue(value: number): string {
-        if (value < 10) return "0" + value
+    private static formatZerolessValue(value: number, totalLength = 2): string {
+        const pad = "0".repeat(totalLength)
 
-        return String(value)
+        return String(`${pad}${value}`).slice(-totalLength)
     }
 
     /**
@@ -277,5 +265,24 @@ export class DateUtils {
         } else {
             return String(value)
         }
+    }
+
+    /**
+     * Parse a date without the UTC-offset of the device
+     *
+     * The problem here is with wrong timezone.
+     *
+     * For example:
+     *
+     * ``new Date('2021-04-28')`` will generate `2021-04-28T00:00:00.000Z`
+     * in my timezone, which is not true for my timezone (GMT-0300). It should
+     * be `2021-04-28T03:00:00.000Z` as `new Date(2021, 3, 28)` generates.
+     */
+    private static parseDateAsISO(dateString: string): Date {
+        const date = new Date(dateString)
+        const offset = date.getTimezoneOffset() * 60 * 1000
+        const utc = date.getTime() + offset
+
+        return new Date(utc)
     }
 }

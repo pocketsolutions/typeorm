@@ -25,6 +25,7 @@ import { View } from "../../schema-builder/view/View"
 import { TableForeignKey } from "../../schema-builder/table/TableForeignKey"
 import { TypeORMError } from "../../error"
 import { InstanceChecker } from "../../util/InstanceChecker"
+import { UpsertType } from "../types/UpsertType"
 
 /**
  * Organizes communication with Oracle RDBMS.
@@ -128,6 +129,11 @@ export class OracleDriver implements Driver {
     ]
 
     /**
+     * Returns type of upsert supported by driver if any
+     */
+    supportedUpsertTypes: UpsertType[] = []
+
+    /**
      * Gets list of spatial column data types.
      */
     spatialTypes: ColumnType[] = []
@@ -224,6 +230,8 @@ export class OracleDriver implements Driver {
     cteCapabilities: CteCapabilities = {
         enabled: false, // TODO: enable
     }
+
+    dummyTableName = "DUAL"
 
     // -------------------------------------------------------------------------
     // Constructor
@@ -545,6 +553,9 @@ export class OracleDriver implements Driver {
             value = DateUtils.stringToSimpleArray(value)
         } else if (columnMetadata.type === "simple-json") {
             value = DateUtils.stringToSimpleJson(value)
+        } else if (columnMetadata.type === Number) {
+            // convert to number if number
+            value = !isNaN(+value) ? parseInt(value) : value
         }
 
         if (columnMetadata.transformer)
@@ -992,6 +1003,9 @@ export class OracleDriver implements Driver {
                 user: credentials.username,
                 password: credentials.password,
                 connectString: credentials.connectString,
+            },
+            {
+                poolMax: options.poolSize,
             },
             options.extra || {},
         )
