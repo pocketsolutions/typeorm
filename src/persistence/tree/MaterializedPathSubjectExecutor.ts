@@ -176,7 +176,7 @@ export class MaterializedPathSubjectExecutor {
                     subject.metadata.materializedPathColumn!.propertyPath,
                 "path",
             )
-            .from(target, subject.metadata.targetName)
+            .from(target, targetName)
             .where(
                 new Brackets((qb) => {
                     for (const data of normalized) {
