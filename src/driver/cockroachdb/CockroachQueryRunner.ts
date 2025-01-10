@@ -225,7 +225,9 @@ export class CockroachQueryRunner
         } else {
             this.storeQueries = false
             this.transactionDepth -= 1
-            await this.query("RELEASE SAVEPOINT cockroach_restart")
+            // This was disabled because it failed tests after update to CRDB 24.2
+            // https://github.com/typeorm/typeorm/pull/11190
+            // await this.query("RELEASE SAVEPOINT cockroach_restart")
             await this.query("COMMIT")
             this.queries = []
             this.isTransactionActive = false
@@ -1019,7 +1021,7 @@ export class CockroachQueryRunner
         const enumColumns = newTable.columns.filter(
             (column) => column.type === "enum" || column.type === "simple-enum",
         )
-        for (let column of enumColumns) {
+        for (const column of enumColumns) {
             // skip renaming for user-defined enum name
             if (column.enumName) continue
 
@@ -3348,10 +3350,10 @@ export class CockroachQueryRunner
                                 } else {
                                     tableColumn.default = dbColumn[
                                         "column_default"
-                                    ].replace(/:::[\w\s\[\]\"]+/g, "")
+                                    ].replace(/:::[\w\s[\]"]+/g, "")
                                     tableColumn.default =
                                         tableColumn.default.replace(
-                                            /^(-?[\d\.]+)$/,
+                                            /^(-?[\d.]+)$/,
                                             "($1)",
                                         )
 
@@ -3744,7 +3746,7 @@ export class CockroachQueryRunner
     protected async getVersion(): Promise<string> {
         const result = await this.query(`SELECT version()`)
         return result[0]["version"].replace(
-            /^CockroachDB CCL v([\d\.]+) .*$/,
+            /^CockroachDB CCL v([\d.]+) .*$/,
             "$1",
         )
     }
@@ -3903,7 +3905,7 @@ export class CockroachQueryRunner
         table: Table,
         indexOrName: TableIndex | TableUnique | string,
     ): Query {
-        let indexName =
+        const indexName =
             InstanceChecker.isTableIndex(indexOrName) ||
             InstanceChecker.isTableUnique(indexOrName)
                 ? indexOrName.name

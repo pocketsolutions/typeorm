@@ -394,7 +394,9 @@ export class DataSource {
 
         const migrationExecutor = new MigrationExecutor(this)
         migrationExecutor.transaction =
-            (options && options.transaction) || "all"
+            options?.transaction ||
+            this.options?.migrationsTransactionMode ||
+            "all"
         migrationExecutor.fake = (options && options.fake) || false
 
         const successMigrations =
@@ -518,6 +520,8 @@ export class DataSource {
 
     /**
      * Executes raw SQL query and returns raw database results.
+     * 
+     * @see [Official docs](https://typeorm.io/data-source-api) for examples.
      */
     async query<T = any>(
         query: string,
